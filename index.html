@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DHIS2 - Nigeria Federal Ministry of Health</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;color:#333;font-size:14px}
+:root{--blue:#147cd7;--dark:#2b3674;--gray:#6c7a8d;--light:#f8f9fa;--border:#e0e0e0;--green:#00897b;--red:#e53935;--orange:#fb8c00}
+
+/* LOGIN */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1565c0,#01579b)}
+.login-box{background:#fff;border-radius:6px;padding:40px;width:370px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-logo{text-align:center;margin-bottom:24px}
+.dhis-logo-text{font-size:30px;font-weight:700;color:var(--blue);letter-spacing:1px}
+.dhis-sub{font-size:12px;color:#777;margin-top:3px}
+.login-org{font-size:13px;color:#555;text-align:center;margin-bottom:20px;font-weight:500}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:5px}
+.fg input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:4px;font-size:14px;outline:none;transition:.2s}
+.fg input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(20,124,215,.12)}
+.login-btn{width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:4px;font-size:15px;font-weight:600;cursor:pointer;margin-top:6px}
+.login-btn:hover{background:#1068bc}
+.login-footer{text-align:center;font-size:11px;color:#aaa;margin-top:18px}
+
+/* APP SHELL */
+#app{display:none;flex-direction:column;min-height:100vh}
+
+/* TOP BAR */
+.top-bar{background:var(--blue);color:#fff;height:48px;display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.logo-area{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none}
+.logo-area .dname{font-size:17px;font-weight:700;color:#fff;letter-spacing:.5px}
+.logo-area .dver{font-size:10px;color:rgba(255,255,255,.65)}
+.breadcrumb{flex:1;font-size:13px;color:rgba(255,255,255,.8);margin-left:10px}
+.top-actions{display:flex;align-items:center;gap:6px;margin-left:auto}
+.tb-icon{background:none;border:none;color:#fff;cursor:pointer;width:36px;height:36px;border-radius:4px;display:flex;align-items:center;justify-content:center;position:relative}
+.tb-icon:hover{background:rgba(255,255,255,.15)}
+.tb-icon svg{fill:white;width:20px;height:20px}
+.notif-badge{position:absolute;top:3px;right:3px;background:#f44336;color:#fff;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.user-chip{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.15);margin-left:4px}
+.user-chip .avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.9);color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+.user-chip span{font-size:13px}
+
+/* APPS GRID OVERLAY */
+.apps-overlay{display:none;position:fixed;top:48px;right:0;width:320px;background:#fff;border:1px solid var(--border);box-shadow:-4px 4px 20px rgba(0,0,0,.15);z-index:200;padding:16px;border-radius:0 0 0 8px;max-height:80vh;overflow-y:auto}
+.apps-overlay.open{display:block}
+.apps-overlay-title{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.apps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mini-app{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:6px;cursor:pointer;border:none;background:none;width:100%}
+.mini-app:hover{background:#f5f7ff}
+.mini-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mini-icon svg{width:22px;height:22px}
+.mini-name{font-size:11px;color:#555;text-align:center;font-weight:500}
+
+/* PAGES */
+.page{display:none;flex-direction:column;flex:1}
+.page.active{display:flex}
+.page-header{background:#fff;border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px}
+.page-header h1{font-size:17px;font-weight:600;color:#222}
+.page-content{flex:1;padding:16px 20px;overflow-y:auto;background:#f5f5f5}
+
+/* BUTTONS */
+.btn{padding:8px 18px;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.15s}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#1068bc}
+.btn-secondary{background:#fff;color:#555;border:1px solid #ccc}.btn-secondary:hover{background:#f5f5f5}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* DASHBOARD */
+.dash-filters{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.dash-filters select{padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-size:13px;outline:none}
+.dash-filters label{font-size:13px;color:#555;font-weight:500}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.kpi-card{background:#fff;border-radius:6px;padding:16px 18px;border:1px solid var(--border);display:flex;align-items:flex-start;gap:12px}
+.kpi-icon{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.kpi-icon svg{width:22px;height:22px}
+.kpi-val{font-size:24px;font-weight:700;line-height:1}
+.kpi-label{font-size:12px;color:#888;margin-top:4px}
+.kpi-chg{font-size:11px;margin-top:5px;font-weight:600}
+.up{color:#e53935}.dn{color:#2e7d32}.nt{color:#888}
+
+.alert-bar{background:#fff8e1;border:1px solid #ffcc02;border-radius:6px;padding:11px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-size:13px}
+.alert-bar .alert-label{font-weight:700;color:#e65100}
+.alert-bar .alert-msg{color:#555}
+
+.chart-row{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+.chart-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.chart-row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.chart-card{background:#fff;border-radius:6px;border:1px solid var(--border);padding:16px}
+.chart-card h3{font-size:13px;font-weight:700;color:#333;margin-bottom:2px}
+.chart-sub{font-size:11px;color:#999;margin-bottom:12px}
+
+/* Nigeria Map */
+.map-svg-wrapper{background:#e8f4f8;border-radius:6px;overflow:hidden}
+.ng-state{cursor:pointer;transition:opacity .15s;stroke:#fff;stroke-width:1}
+.ng-state:hover{opacity:.75;stroke:#333;stroke-width:1.5}
+.map-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:#555}
+.legend-swatch{display:flex;align-items:center;gap:4px}
+.swatch{width:12px;height:12px;border-radius:2px}
+
+/* Alerts list */
+.alert-list{list-style:none}
+.a-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f0f0f0}
+.a-item:last-child{border-bottom:none}
+.a-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.a-text{font-size:12px;line-height:1.4}
+.a-time{font-size:10px;color:#aaa;margin-top:2px}
+
+/* Completeness bars */
+.comp-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.comp-label{width:80px;font-size:11px;color:#555;text-align:right;flex-shrink:0}
+.comp-bg{flex:1;background:#eee;border-radius:3px;height:13px;overflow:hidden}
+.comp-fill{height:100%;border-radius:3px;transition:width .4s}
+.comp-pct{width:34px;font-size:11px;font-weight:700;text-align:right}
+
+/* State disease burden table */
+.sdtbl-wrap{background:#fff;border-radius:6px;border:1px solid var(--border);overflow:hidden;margin-bottom:14px}
+.sdtbl-wrap h3{font-size:13px;font-weight:700;padding:12px 16px;border-bottom:1px solid var(--border);color:#333;background:#fff}
+.sdtbl{width:100%;border-collapse:collapse;font-size:12px}
+.sdtbl th{background:#f4f6fb;padding:9px 13px;text-align:left;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.3px;border-bottom:2px solid var(--border);white-space:nowrap}
+.sdtbl td{padding:8px 13px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+.sdtbl tr:hover td{background:#f9fbff}
+.sdtbl .td-state{font-weight:700;font-size:12px;color:#1a1a1a;white-space:nowrap;background:#fafcff;border-right:2px solid var(--border)}
+.sdtbl .td-zone{font-size:10px;color:#888;font-weight:400;display:block}
+.sdtbl .td-rank{font-size:10px;color:#aaa;font-weight:400;display:block}
+.sdtbl .td-disease{font-size:12px;color:#333;font-weight:500}
+.sdtbl .td-sus{text-align:right;color:#555}
+.sdtbl .td-conf{text-align:right;color:#c62828;font-weight:700}
+.sdtbl .td-deaths{text-align:right;color:#880e4f;font-weight:700}
+.sdtbl .td-alert{text-align:center}
+.sdtbl .sep-row td{background:#f0f4ff;padding:5px 13px;font-size:11px;font-weight:700;color:#1565c0;border-bottom:1px solid #d0d8ee;border-top:2px solid #c5d0ea}
+.alv{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
+.alv-outbreak{background:#7f0000;color:#fff}
+.alv-alert{background:#ffebee;color:#c62828}
+.alv-watch{background:#fff3e0;color:#e65100}
+.alv-normal{background:#e8f5e9;color:#2e7d32}
+
+/* CAPTURE */
+.capture-layout{display:flex;gap:14px;height:calc(100vh - 128px)}
+.cap-sidebar{width:250px;flex-shrink:0;background:#fff;border-radius:6px;border:1px solid var(--border);overflow-y:auto}
+.cap-main{flex:1;background:#fff;border-radius:6px;border:1px solid var(--border);overflow-y:auto;padding:22px}
+.sb-section-title{padding:10px 14px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;background:#fafafa;border-bottom:1px solid #f0f0f0;border-top:1px solid #f0f0f0}
+.prog-item{padding:11px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-left:3px solid transparent;transition:.12s}
+.prog-item:hover{background:#f5f7ff}
+.prog-item.active{background:#e8f0fe;border-left-color:var(--blue);color:var(--blue)}
+.prog-icon{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.prog-icon svg{width:16px;height:16px}
+.prog-name{font-size:13px;font-weight:500}
+.prog-type{font-size:10px;color:#888}
+
+/* Form */
+.form-title{font-size:17px;font-weight:700;color:#222;margin-bottom:3px}
+.form-sub{font-size:12px;color:#777;margin-bottom:16px}
+.fsection{border:1px solid var(--border);border-radius:6px;margin-bottom:14px;overflow:hidden}
+.fsec-head{padding:9px 14px;background:#f0f4ff;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--dark)}
+.fsec-body{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fsec-body.one{grid-template-columns:1fr}
+.fg-full{grid-column:1/-1}
+.fg label{font-size:11px;font-weight:700;color:#555;margin-bottom:4px;display:flex;align-items:center;gap:3px}
+.req{color:#e53935;font-size:10px}
+.fg input,.fg select,.fg textarea{width:100%;padding:7px 9px;border:1px solid #ddd;border-radius:4px;font-size:13px;outline:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--blue)}
+.fg textarea{resize:vertical;min-height:60px}
+.radio-row{display:flex;gap:14px;padding:3px 0;font-size:13px}
+.radio-row label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.form-actions{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+
+/* Tabs */
+.tab-nav{display:flex;border-bottom:2px solid var(--border);margin-bottom:16px}
+.tab-btn{padding:9px 18px;background:none;border:none;cursor:pointer;font-size:13px;color:#666;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Data table */
+.dtbl{width:100%;border-collapse:collapse;font-size:12px}
+.dtbl th{background:#f8f9fa;padding:9px 12px;text-align:left;font-weight:700;font-size:11px;color:#666;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.dtbl td{padding:9px 12px;border-bottom:1px solid #f5f5f5}
+.dtbl tr:hover td{background:#f9fbff}
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700}
+.b-red{background:#ffebee;color:#c62828}
+.b-green{background:#e8f5e9;color:#2e7d32}
+.b-orange{background:#fff3e0;color:#e65100}
+.b-blue{background:#e3f2fd;color:#1565c0}
+
+/* Data Entry */
+.de-layout{display:flex;gap:14px}
+.de-side{width:220px;flex-shrink:0;background:#fff;border-radius:6px;border:1px solid var(--border)}
+.de-side h3{padding:11px 14px;font-size:12px;font-weight:700;color:#555;border-bottom:1px solid var(--border);background:#fafafa}
+.de-item{padding:9px 14px;cursor:pointer;border-left:3px solid transparent;font-size:13px;transition:.12s}
+.de-item:hover{background:#f5f7ff}
+.de-item.active{background:#e8f0fe;border-left-color:var(--blue);color:var(--blue)}
+.de-main{flex:1;background:#fff;border-radius:6px;border:1px solid var(--border);padding:18px}
+.period-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.period-row label{font-size:12px;font-weight:700;color:#555}
+.period-row select{padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px;outline:none}
+.de-tbl{width:100%;border-collapse:collapse}
+.de-tbl th{background:#f0f4ff;padding:8px 10px;text-align:center;font-size:11px;font-weight:700;color:var(--dark);border:1px solid var(--border)}
+.de-tbl td{border:1px solid var(--border);padding:5px 8px}
+.de-tbl td:first-child{font-size:12px;color:#444;background:#fafafa}
+.de-tbl input{width:100%;padding:4px 5px;border:1px solid transparent;border-radius:3px;font-size:12px;outline:none;text-align:center}
+.de-tbl input:focus{border-color:var(--blue);background:#f0f8ff}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal-box{background:#fff;border-radius:6px;width:460px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:15px;font-weight:700}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1}
+.modal-body{padding:18px}
+.modal-foot{padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+
+/* Toast */
+.toast{position:fixed;bottom:22px;right:22px;background:#323232;color:#fff;padding:11px 18px;border-radius:5px;font-size:13px;z-index:9999;opacity:0;transform:translateY(16px);transition:.3s;max-width:320px;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{background:#2e7d32}
+.toast.error{background:#c62828}
+
+/* Maps */
+.maps-bar{display:flex;gap:8px;align-items:center;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.maps-bar select,.maps-bar button{padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-size:12px;cursor:pointer;background:#fff}
+.maps-bar button.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#f0f0f0}
+::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="dhis-logo-text">DHIS2</div>
+      <div class="dhis-sub">District Health Information Software 2</div>
+    </div>
+    <div class="login-org">Nigeria Federal Ministry of Health &amp; Social Welfare</div>
+    <div class="fg"><label>Username</label><input type="text" id="lu" value="min.health.ng" placeholder="Username"></div>
+    <div class="fg"><label>Password</label><input type="password" id="lp" value="District2026" placeholder="Password"></div>
+    <button class="login-btn" onclick="doLogin()">Sign in</button>
+    <div class="login-footer">DHIS2 v2.41 &nbsp;|&nbsp; Nigeria FMOH &nbsp;|&nbsp; Powered by HISP</div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app">
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="logo-area" onclick="showApp('dashboard')">
+      <div>
+        <div class="dname">DHIS2</div>
+        <div class="dver">v2.41 — Nigeria</div>
+      </div>
+    </div>
+    <div class="breadcrumb" id="breadcrumb">Dashboard</div>
+    <div class="top-actions">
+      <button class="tb-icon" title="Messages">
+        <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+      </button>
+      <button class="tb-icon" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5S10.5 3.17 10.5 4v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        <span class="notif-badge">3</span>
+      </button>
+      <button class="tb-icon" onclick="toggleApps()" title="Apps" id="apps-btn">
+        <svg viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
+      </button>
+      <div class="user-chip"><div class="avatar">MO</div><span>Min. Okonkwo</span></div>
+    </div>
+  </div>
+
+  <!-- APPS OVERLAY (top-right) -->
+  <div class="apps-overlay" id="apps-overlay">
+    <div class="apps-overlay-title">Applications</div>
+    <div class="apps-grid">
+      <button class="mini-app" onclick="showApp('dashboard');closeApps()">
+        <div class="mini-icon" style="background:#e8f5e9"><svg viewBox="0 0 24 24" fill="#2e7d32"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg></div>
+        <span class="mini-name">Dashboard</span>
+      </button>
+      <button class="mini-app" onclick="showApp('capture');closeApps()">
+        <div class="mini-icon" style="background:#e3f2fd"><svg viewBox="0 0 24 24" fill="#1565c0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg></div>
+        <span class="mini-name">Capture</span>
+      </button>
+      <button class="mini-app" onclick="showApp('data-entry');closeApps()">
+        <div class="mini-icon" style="background:#fff3e0"><svg viewBox="0 0 24 24" fill="#e65100"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
+        <span class="mini-name">Data Entry</span>
+      </button>
+      <button class="mini-app" onclick="showApp('maps');closeApps()">
+        <div class="mini-icon" style="background:#fce4ec"><svg viewBox="0 0 24 24" fill="#c2185b"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/></svg></div>
+        <span class="mini-name">Maps</span>
+      </button>
+      <button class="mini-app" onclick="showApp('analytics');closeApps()">
+        <div class="mini-icon" style="background:#f3e5f5"><svg viewBox="0 0 24 24" fill="#6a1b9a"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg></div>
+        <span class="mini-name">Analytics</span>
+      </button>
+      <button class="mini-app" onclick="showToast('Event Reports loaded')">
+        <div class="mini-icon" style="background:#e8eaf6"><svg viewBox="0 0 24 24" fill="#3949ab"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm2 14H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></div>
+        <span class="mini-name">Event Reports</span>
+      </button>
+      <button class="mini-app" onclick="showToast('Reports loaded')">
+        <div class="mini-icon" style="background:#e0f2f1"><svg viewBox="0 0 24 24" fill="#00695c"><path d="M20 6H4V4h16v2zm-2 2H6v2h12V8zm2 4H4v2h16v-2zm-2 4H6v2h12v-2z"/></svg></div>
+        <span class="mini-name">Reports</span>
+      </button>
+      <button class="mini-app" onclick="showToast('User Management loaded')">
+        <div class="mini-icon" style="background:#fafafa"><svg viewBox="0 0 24 24" fill="#555"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+        <span class="mini-name">Users</span>
+      </button>
+      <button class="mini-app" onclick="showToast('System Settings loaded')">
+        <div class="mini-icon" style="background:#fff8e1"><svg viewBox="0 0 24 24" fill="#f57f17"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96a7.01 7.01 0 00-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84a.484.484 0 00-.47.41l-.36 2.54a7.335 7.335 0 00-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87a.485.485 0 00.12.61l2.03 1.58A7.23 7.23 0 004.82 12c0 .31.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.28.28.41.47.41h3.84c.24 0 .44-.17.47-.41l.36-2.54a7.27 7.27 0 001.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.48.48 0 00-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></div>
+        <span class="mini-name">Settings</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== DASHBOARD PAGE ===== -->
+  <div id="page-dashboard" class="page active">
+    <div class="page-header">
+      <h1>Minister of Health — Surveillance Dashboard</h1>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <select style="padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-size:13px" onchange="showToast('Period updated')">
+          <option>Week 18, May 2026 (Current)</option><option>April 2026</option><option>Q1 2026</option><option>2025 Annual</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="showToast('Dashboard exported as PDF')">Export</button>
+        <button class="btn btn-primary btn-sm" onclick="showToast('Data refreshed — as of 04 May 2026 08:00 WAT')">Refresh</button>
+      </div>
+    </div>
+    <div class="page-content">
+
+      <!-- Alert banner -->
+      <div class="alert-bar">
+        <span class="alert-label">ACTIVE ALERT:</span>
+        <span class="alert-msg">Cholera outbreak threshold exceeded in Lagos State — 47 suspected cases this week. Immediate response recommended.</span>
+        <button class="btn btn-secondary btn-sm" style="margin-left:auto;flex-shrink:0" onclick="this.closest('.alert-bar').style.display='none'">Acknowledge</button>
+      </div>
+
+      <!-- KPI row -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:#fff3e0"><svg viewBox="0 0 24 24" fill="#e65100"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+          <div><div class="kpi-val" style="color:#e65100">1,284</div><div class="kpi-label">Suspected Cases (W18)</div><div class="kpi-chg up">+12% vs last week</div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:#ffebee"><svg viewBox="0 0 24 24" fill="#c62828"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 002 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div>
+          <div><div class="kpi-val" style="color:#c62828">342</div><div class="kpi-label">Confirmed Cases (W18)</div><div class="kpi-chg up">+8% vs last week</div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:#fce4ec"><svg viewBox="0 0 24 24" fill="#880e4f"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div>
+          <div><div class="kpi-val" style="color:#880e4f">18</div><div class="kpi-label">Deaths (W18)</div><div class="kpi-chg dn">-3% vs last week</div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:#e8f5e9"><svg viewBox="0 0 24 24" fill="#2e7d32"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg></div>
+          <div><div class="kpi-val" style="color:#2e7d32">5.3%</div><div class="kpi-label">Case Fatality Rate</div><div class="kpi-chg dn">-0.4% vs last week</div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:#e3f2fd"><svg viewBox="0 0 24 24" fill="#1565c0"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6z"/></svg></div>
+          <div><div class="kpi-val" style="color:#1565c0">762</div><div class="kpi-label">Facility Referrals</div><div class="kpi-chg nt">Stable</div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:#f3e5f5"><svg viewBox="0 0 24 24" fill="#6a1b9a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z"/></svg></div>
+          <div><div class="kpi-val" style="color:#6a1b9a">3</div><div class="kpi-label">Active Outbreak Alerts</div><div class="kpi-chg up">+1 new alert</div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:#e0f2f1"><svg viewBox="0 0 24 24" fill="#00695c"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+          <div><div class="kpi-val" style="color:#00695c">78%</div><div class="kpi-label">Reporting Completeness</div><div class="kpi-chg dn">-2% vs last week</div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:#fff8e1"><svg viewBox="0 0 24 24" fill="#f57f17"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg></div>
+          <div><div class="kpi-val" style="color:#f57f17">82%</div><div class="kpi-label">Reporting Timeliness</div><div class="kpi-chg dn">+5% vs last week</div></div>
+        </div>
+      </div>
+
+      <!-- Row 1: Trends + Top diseases -->
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Weekly Disease Trends — Suspected vs Confirmed Cases</h3>
+          <div class="chart-sub">National level | Weeks 1–18, 2026</div>
+          <canvas id="trendsChart" height="95"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Top Diseases by Confirmed Cases</h3>
+          <div class="chart-sub">This week (W18) — National</div>
+          <canvas id="diseaseBar" height="195"></canvas>
+        </div>
+      </div>
+
+      <!-- Row 2: Map + Alerts -->
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Nigeria — Disease Burden by State (Confirmed Cases, W18)</h3>
+          <div class="chart-sub">Click a state to view details</div>
+          <div class="map-svg-wrapper">
+            <svg id="ng-map" viewBox="0 0 570 590" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg">
+              <polygon class="ng-state" data-s="Sokoto" data-c="12" points="68.5,130.8 122.5,60.8 194.5,25.8 239.5,43.3 248.5,84.2 203.5,130.8 136.0,160.0 91.0,142.5" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Kebbi" data-c="19" points="32.5,189.2 68.5,130.8 91.0,142.5 136.0,160.0 136.0,235.8 104.5,276.7 68.5,259.2 32.5,235.8" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Zamfara" data-c="28" points="136.0,160.0 203.5,130.8 248.5,84.2 271.0,130.8 257.5,189.2 226.0,218.3 181.0,235.8 136.0,235.8" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Katsina" data-c="45" points="203.5,130.8 239.5,43.3 316.0,31.7 383.5,43.3 406.0,101.7 361.0,142.5 293.5,160.0 248.5,160.0 257.5,189.2 271.0,130.8" fill="#e57373"/>
+              <polygon class="ng-state" data-s="Kano" data-c="87" points="257.5,189.2 271.0,130.8 361.0,142.5 406.0,101.7 428.5,160.0 383.5,200.8 338.5,218.3 293.5,218.3 271.0,235.8" fill="#c62828"/>
+              <polygon class="ng-state" data-s="Jigawa" data-c="31" points="293.5,160.0 361.0,142.5 406.0,101.7 428.5,160.0 473.5,130.8 496.0,160.0 451.0,200.8 406.0,218.3 361.0,218.3 316.0,200.8" fill="#e57373"/>
+              <polygon class="ng-state" data-s="Borno" data-c="22" points="428.5,160.0 473.5,130.8 496.0,25.8 541.0,25.8 550.0,101.7 541.0,189.2 496.0,218.3 473.5,200.8 451.0,200.8 428.5,160.0" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Yobe" data-c="17" points="383.5,200.8 428.5,160.0 451.0,200.8 496.0,218.3 541.0,189.2 518.5,247.5 473.5,276.7 428.5,247.5 406.0,235.8" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Gombe" data-c="14" points="338.5,218.3 383.5,200.8 406.0,235.8 428.5,247.5 451.0,276.7 406.0,305.8 361.0,294.2 338.5,276.7" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Adamawa" data-c="16" points="428.5,247.5 473.5,276.7 541.0,189.2 518.5,247.5 550.0,305.8 541.0,364.2 509.5,393.3 473.5,375.8 451.0,335.0 428.5,305.8 428.5,259.2" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Taraba" data-c="15" points="361.0,294.2 406.0,305.8 451.0,276.7 428.5,305.8 428.5,364.2 406.0,393.3 374.5,393.3 338.5,364.2 316.0,335.0 316.0,305.8 338.5,276.7" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Niger" data-c="9" points="46.0,276.7 104.5,276.7 136.0,235.8 181.0,235.8 226.0,218.3 248.5,247.5 226.0,305.8 203.5,335.0 158.5,364.2 136.0,335.0 91.0,335.0 59.5,317.5" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Kaduna" data-c="53" points="226.0,218.3 271.0,235.8 293.5,218.3 338.5,218.3 383.5,200.8 338.5,276.7 316.0,305.8 293.5,335.0 248.5,335.0 226.0,305.8 203.5,276.7" fill="#e57373"/>
+              <polygon class="ng-state" data-s="Nasarawa" data-c="20" points="226.0,305.8 248.5,335.0 293.5,335.0 316.0,305.8 338.5,276.7 361.0,294.2 338.5,364.2 316.0,393.3 271.0,393.3 248.5,364.2 226.0,335.0" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Plateau" data-c="38" points="316.0,305.8 338.5,276.7 361.0,294.2 406.0,305.8 406.0,352.5 374.5,393.3 338.5,364.2 316.0,335.0" fill="#e57373"/>
+              <polygon class="ng-state" data-s="Bauchi" data-c="23" points="293.5,218.3 338.5,218.3 338.5,276.7 316.0,305.8 316.0,335.0 293.5,335.0 293.5,218.3" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="FCT" data-c="41" points="181.0,305.8 226.0,305.8 226.0,335.0 248.5,364.2 226.0,393.3 194.5,393.3 181.0,364.2 158.5,335.0" fill="#c62828"/>
+              <polygon class="ng-state" data-s="Kwara" data-c="11" points="46.0,276.7 91.0,335.0 136.0,335.0 158.5,364.2 181.0,364.2 181.0,393.3 136.0,422.5 113.5,422.5 91.0,393.3 68.5,364.2 46.0,335.0" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Kogi" data-c="18" points="158.5,335.0 181.0,305.8 226.0,305.8 226.0,335.0 203.5,335.0 226.0,393.3 203.5,422.5 181.0,422.5 158.5,393.3" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Benue" data-c="27" points="226.0,335.0 248.5,364.2 271.0,393.3 316.0,393.3 374.5,393.3 406.0,393.3 383.5,434.2 338.5,451.7 293.5,451.7 248.5,422.5 226.0,393.3" fill="#e57373"/>
+              <polygon class="ng-state" data-s="Oyo" data-c="67" points="23.5,335.0 46.0,276.7 91.0,335.0 91.0,393.3 68.5,422.5 46.0,422.5 23.5,393.3" fill="#c62828"/>
+              <polygon class="ng-state" data-s="Osun" data-c="22" points="91.0,393.3 113.5,422.5 136.0,422.5 136.0,451.7 113.5,451.7 91.0,422.5" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Ekiti" data-c="11" points="113.5,422.5 136.0,422.5 158.5,393.3 181.0,422.5 158.5,451.7 136.0,451.7" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Ondo" data-c="18" points="91.0,422.5 113.5,451.7 136.0,451.7 158.5,451.7 158.5,480.8 136.0,510.0 113.5,510.0 91.0,480.8" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Ogun" data-c="29" points="23.5,393.3 46.0,422.5 68.5,422.5 91.0,422.5 91.0,451.7 68.5,451.7 46.0,451.7 23.5,422.5" fill="#e57373"/>
+              <polygon class="ng-state" data-s="Lagos" data-c="112" points="23.5,451.7 46.0,451.7 68.5,451.7 91.0,451.7 91.0,480.8 68.5,480.8 46.0,480.8 23.5,469.2" fill="#7f0000"/>
+              <polygon class="ng-state" data-s="Edo" data-c="24" points="136.0,393.3 158.5,393.3 181.0,422.5 203.5,422.5 203.5,451.7 181.0,480.8 158.5,510.0 136.0,492.5 136.0,451.7" fill="#e57373"/>
+              <polygon class="ng-state" data-s="Anambra" data-c="36" points="181.0,451.7 203.5,451.7 226.0,422.5 226.0,480.8 203.5,492.5 194.5,492.5 181.0,480.8" fill="#e57373"/>
+              <polygon class="ng-state" data-s="Delta" data-c="33" points="136.0,492.5 158.5,510.0 181.0,480.8 181.0,510.0 167.5,539.2 149.5,550.8 122.5,539.2 113.5,510.0" fill="#e57373"/>
+              <polygon class="ng-state" data-s="Imo" data-c="25" points="203.5,492.5 226.0,480.8 226.0,510.0 212.5,527.5 203.5,527.5 194.5,510.0" fill="#e57373"/>
+              <polygon class="ng-state" data-s="Abia" data-c="19" points="226.0,480.8 226.0,422.5 248.5,422.5 248.5,480.8 239.5,510.0 226.0,510.0" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Enugu" data-c="22" points="203.5,422.5 226.0,422.5 226.0,480.8 203.5,492.5 194.5,480.8 181.0,451.7" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Cross River" data-c="21" points="248.5,422.5 271.0,393.3 293.5,393.3 316.0,393.3 338.5,451.7 316.0,480.8 284.5,510.0 257.5,510.0 248.5,480.8" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Akwa Ibom" data-c="16" points="226.0,510.0 239.5,510.0 248.5,480.8 257.5,510.0 271.0,539.2 248.5,568.3 226.0,550.8 212.5,527.5" fill="#ffcdd2"/>
+              <polygon class="ng-state" data-s="Rivers" data-c="44" points="181.0,510.0 203.5,527.5 226.0,510.0 212.5,527.5 203.5,550.8 181.0,556.7 167.5,539.2 167.5,539.2" fill="#e57373"/>
+              <polygon class="ng-state" data-s="Bayelsa" data-c="8" points="149.5,550.8 167.5,539.2 181.0,556.7 181.0,568.3 158.5,580.0 136.0,568.3 136.0,550.8" fill="#ffcdd2"/>
+              text x="163.0" y="97.3" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Sokoto</text>
+              <text x="83.7" y="203.8" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Kebbi</text>
+              <text x="207.4" y="173.1" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Zamfara</text>
+              <text x="298.0" y="113.3" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="normal" pointer-events="none">Katsina</text>
+              <text x="334.5" y="177.5" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="bold" pointer-events="none">Kano</text>
+              <text x="399.2" y="169.3" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="normal" pointer-events="none">Jigawa</text>
+              <text x="487.9" y="141.3" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Borno</text>
+              <text x="458.5" y="219.6" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Yobe</text>
+              <text x="389.1" y="257.0" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Gombe</text>
+              <text x="485.8" y="300.0" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Adamawa</text>
+              <text x="378.6" y="328.6" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Taraba</text>
+              <text x="151.4" y="290.3" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Niger</text>
+              <text x="285.3" y="266.1" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="normal" pointer-events="none">Kaduna</text>
+              <text x="289.4" y="336.6" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Nasarawa</text>
+              <text x="357.1" y="328.4" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="normal" pointer-events="none">Plateau</text>
+              <text x="312.8" y="272.5" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Bauchi</text>
+              <text x="205.2" y="349.6" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="bold" pointer-events="none">FCT</text>
+              <text x="113.5" y="364.2" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Kwara</text>
+              <text x="196.0" y="360.9" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Kogi</text>
+              <text x="302.9" y="402.3" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="normal" pointer-events="none">Benue</text>
+              <text x="55.6" y="368.3" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="bold" pointer-events="none">Oyo</text>
+              <text x="113.5" y="427.4" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Osun</text>
+              <text x="147.2" y="427.4" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Ekiti</text>
+              <text x="124.8" y="469.9" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Ondo</text>
+              <text x="57.2" y="429.8" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="normal" pointer-events="none">Ogun</text>
+              <text x="57.2" y="464.8" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="bold" pointer-events="none">Lagos</text>
+              <text x="166.0" y="446.5" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="normal" pointer-events="none">Edo</text>
+              <text x="202.2" y="467.5" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="normal" pointer-events="none">Anambra</text>
+              <text x="151.2" y="516.6" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="normal" pointer-events="none">Delta</text>
+              <text x="211.0" y="508.1" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="normal" pointer-events="none">Imo</text>
+              <text x="235.8" y="471.1" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Abia</text>
+              <text x="205.8" y="458.5" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Enugu</text>
+              <text x="286.0" y="448.4" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Cross R.</text>
+              <text x="241.2" y="524.6" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Akwa I.</text>
+              <text x="192.8" y="532.6" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#fff" font-weight="normal" pointer-events="none">Rivers</text>
+              <text x="158.5" y="559.2" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="#555" font-weight="normal" pointer-events="none">Bayelsa</text>
+              <!-- Tooltip -->
+              <rect id="tt-bg" x="0" y="0" width="160" height="54" rx="4" fill="#212121" opacity="0" pointer-events="none"/>
+              <text id="tt-state" x="8" y="20" font-size="11" fill="#fff" font-weight="bold" opacity="0" pointer-events="none"/>
+              <text id="tt-cases" x="8" y="38" font-size="10" fill="#ffcc80" opacity="0" pointer-events="none"/>
+            </svg>
+          </div>
+          <div class="map-legend">
+            <div class="legend-swatch"><div class="swatch" style="background:#ffcdd2"></div>1–20</div>
+            <div class="legend-swatch"><div class="swatch" style="background:#ef9a9a"></div>21–40</div>
+            <div class="legend-swatch"><div class="swatch" style="background:#e57373"></div>41–70</div>
+            <div class="legend-swatch"><div class="swatch" style="background:#c62828"></div>71–120</div>
+            <div class="legend-swatch"><div class="swatch" style="background:#b71c1c"></div>120+</div>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <h3>Active Alerts &amp; Notifications</h3>
+          <div class="chart-sub">System alerts — Last 48 hours</div>
+          <ul class="alert-list">
+            <li class="a-item"><div class="a-dot" style="background:#e53935"></div><div><div class="a-text"><strong>OUTBREAK:</strong> Cholera threshold exceeded, Lagos State (47 suspected W18)</div><div class="a-time">Today, 06:12 WAT</div></div></li>
+            <li class="a-item"><div class="a-dot" style="background:#fb8c00"></div><div><div class="a-text"><strong>WATCH:</strong> Mpox cases rising in Rivers &amp; Cross River (11 new cases W18)</div><div class="a-time">Today, 05:45 WAT</div></div></li>
+            <li class="a-item"><div class="a-dot" style="background:#fb8c00"></div><div><div class="a-text"><strong>WATCH:</strong> Meningitis season onset detected in Northern states</div><div class="a-time">Yesterday, 22:30 WAT</div></div></li>
+            <li class="a-item"><div class="a-dot" style="background:#43a047"></div><div><div class="a-text"><strong>INFO:</strong> Lassa Fever CFR improved to 18% (target: &lt;20%)</div><div class="a-time">Yesterday, 14:00 WAT</div></div></li>
+            <li class="a-item"><div class="a-dot" style="background:#43a047"></div><div><div class="a-text"><strong>INFO:</strong> Weekly reports received from 29/36 states on time</div><div class="a-time">Yesterday, 08:00 WAT</div></div></li>
+            <li class="a-item"><div class="a-dot" style="background:#1565c0"></div><div><div class="a-text"><strong>SYSTEM:</strong> Measles vaccination data integrated from 12 LGAs</div><div class="a-time">2 days ago, 16:00 WAT</div></div></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Row 3: CFR + Age + Gender -->
+      <div class="chart-row-3">
+        <div class="chart-card">
+          <h3>Case Fatality Rate by Disease</h3>
+          <div class="chart-sub">Current vs. national threshold</div>
+          <canvas id="cfrChart" height="185"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Cases by Age Group</h3>
+          <div class="chart-sub">All confirmed cases, W18</div>
+          <canvas id="ageChart" height="185"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Gender &amp; Urban/Rural Distribution</h3>
+          <div class="chart-sub">Confirmed cases, W18</div>
+          <canvas id="genderChart" height="185"></canvas>
+        </div>
+      </div>
+
+      <!-- Row 4: Completeness -->
+      <div class="chart-row-2">
+        <div class="chart-card">
+          <h3>Reporting Completeness by Geopolitical Zone</h3>
+          <div class="chart-sub">% of facilities that submitted weekly report on time</div>
+          <div style="margin-top:10px">
+            <div class="comp-row"><div class="comp-label">SW Zone</div><div class="comp-bg"><div class="comp-fill" style="width:91%;background:#43a047"></div></div><div class="comp-pct" style="color:#43a047">91%</div></div>
+            <div class="comp-row"><div class="comp-label">SE Zone</div><div class="comp-bg"><div class="comp-fill" style="width:88%;background:#43a047"></div></div><div class="comp-pct" style="color:#43a047">88%</div></div>
+            <div class="comp-row"><div class="comp-label">SS Zone</div><div class="comp-bg"><div class="comp-fill" style="width:84%;background:#43a047"></div></div><div class="comp-pct" style="color:#43a047">84%</div></div>
+            <div class="comp-row"><div class="comp-label">NC Zone</div><div class="comp-bg"><div class="comp-fill" style="width:79%;background:#fb8c00"></div></div><div class="comp-pct" style="color:#fb8c00">79%</div></div>
+            <div class="comp-row"><div class="comp-label">NW Zone</div><div class="comp-bg"><div class="comp-fill" style="width:71%;background:#fb8c00"></div></div><div class="comp-pct" style="color:#fb8c00">71%</div></div>
+            <div class="comp-row"><div class="comp-label">NE Zone</div><div class="comp-bg"><div class="comp-fill" style="width:62%;background:#e53935"></div></div><div class="comp-pct" style="color:#e53935">62%</div></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3>Monthly Case Volume — 2026</h3>
+          <div class="chart-sub">Suspected vs confirmed — Jan through May</div>
+          <canvas id="monthlyChart" height="165"></canvas>
+        </div>
+      </div>
+
+      <!-- State-level disease burden table -->
+      <div class="sdtbl-wrap">
+        <h3>State-Level Disease Burden — Top 3 Diseases per State, Week 18, 2026</h3>
+        <table class="sdtbl">
+          <thead>
+            <tr>
+              <th style="width:110px">State</th>
+              <th style="width:20px">#</th>
+              <th>Top Disease</th>
+              <th style="width:90px;text-align:right">Suspected</th>
+              <th style="width:90px;text-align:right">Confirmed</th>
+              <th style="width:70px;text-align:right">Deaths</th>
+              <th style="width:110px;text-align:center">Alert Level</th>
+            </tr>
+          </thead>
+          <tbody id="state-tbody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== CAPTURE PAGE ===== -->
+  <div id="page-capture" class="page">
+    <div class="page-header">
+      <h1>Capture</h1>
+      <div style="margin-left:auto">
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('new-evt-modal').classList.add('open')">New Event</button>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="capture-layout">
+        <div class="cap-sidebar">
+          <div class="sb-section-title">Programs</div>
+          <div class="prog-item active" onclick="selectProg(this,'ca')">
+            <div class="prog-icon" style="background:#e3f2fd"><svg viewBox="0 0 24 24" fill="#1565c0" style="width:16px;height:16px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+            <div><div class="prog-name">Community Alert</div><div class="prog-type">Event Program</div></div>
+          </div>
+          <div class="prog-item" onclick="selectProg(this,'fi')">
+            <div class="prog-icon" style="background:#e8f5e9"><svg viewBox="0 0 24 24" fill="#2e7d32" style="width:16px;height:16px"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg></div>
+            <div><div class="prog-name">Facility IDSR Case</div><div class="prog-type">Tracker Program</div></div>
+          </div>
+          <div class="prog-item" onclick="selectProg(this,'wa')">
+            <div class="prog-icon" style="background:#fff3e0"><svg viewBox="0 0 24 24" fill="#e65100" style="width:16px;height:16px"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 002 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div>
+            <div><div class="prog-name">Weekly Aggregate</div><div class="prog-type">Aggregate Program</div></div>
+          </div>
+          <div class="sb-section-title">Organisation Unit</div>
+          <div style="padding:10px 12px">
+            <select style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;outline:none">
+              <option>Nigeria (National)</option><option>Lagos State</option><option>Kano State</option>
+              <option>Rivers State</option><option>Oyo State</option><option>FCT Abuja</option>
+            </select>
+          </div>
+          <div class="sb-section-title">Period</div>
+          <div style="padding:10px 12px">
+            <select style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;outline:none">
+              <option>Week 18 (Apr 27 – May 3)</option><option>Week 17</option><option>May 2026</option>
+            </select>
+          </div>
+          <div style="padding:10px 12px">
+            <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;margin-bottom:6px">Recent Events</div>
+            <div style="font-size:11px;color:#666;line-height:1.9">
+              <div>Cholera — Lagos (Today)</div>
+              <div>Measles — Kano (Yesterday)</div>
+              <div>Mpox — Rivers (2d ago)</div>
+              <div>Meningitis — Kaduna (3d ago)</div>
+              <div>Lassa Fever — Edo (4d ago)</div>
+            </div>
+          </div>
+        </div>
+        <div class="cap-main" id="cap-main">
+          <!-- CA form default -->
+          <div id="form-ca">
+            <div class="form-title">Community Alert Reporting Form</div>
+            <div class="form-sub">CBS Focal Person Report — Submit immediately to supervisor or nearby health facility</div>
+            <div class="tab-nav">
+              <button class="tab-btn active" onclick="switchTab(this,'tca-form')">New Report</button>
+              <button class="tab-btn" onclick="switchTab(this,'tca-list')">Event List</button>
+            </div>
+            <div id="tca-form" class="tab-content active">
+              <form onsubmit="submitForm(event,'Community Alert')">
+                <div class="fsection">
+                  <div class="fsec-head">Reporter Information</div>
+                  <div class="fsec-body">
+                    <div class="fg"><label>Name of CBS Focal Person <span class="req">*</span></label><input type="text" placeholder="Full name" required></div>
+                    <div class="fg"><label>Telephone Number <span class="req">*</span></label><input type="tel" placeholder="+234 xxx xxxx xxx" required></div>
+                    <div class="fg"><label>Community</label><input type="text" placeholder="Community name"></div>
+                    <div class="fg"><label>Site / Ward</label><input type="text" placeholder="Ward or sub-district"></div>
+                    <div class="fg"><label>Date of Report <span class="req">*</span></label><input type="date" value="2026-05-04" required></div>
+                    <div class="fg"><label>LGA / District</label>
+                      <select><option>Select LGA</option><option>Eti-Osa (Lagos)</option><option>Nassarawa (Kano)</option><option>Port Harcourt (Rivers)</option><option>Ibadan North (Oyo)</option><option>Gwagwalada (FCT)</option></select>
+                    </div>
+                  </div>
+                </div>
+                <div class="fsection">
+                  <div class="fsec-head">Alert / Event Details</div>
+                  <div class="fsec-body">
+                    <div class="fg fg-full"><label>Type of Illness / Condition / Event <span class="req">*</span></label>
+                      <select required>
+                        <option value="">-- Select disease/event --</option>
+                        <option>Cholera</option><option>Lassa Fever</option><option>Mpox (Monkeypox)</option>
+                        <option>Measles</option><option>Meningitis</option><option>Yellow Fever</option>
+                        <option>Dengue Fever</option><option>Viral Haemorrhagic Fever</option>
+                        <option>AFP (Acute Flaccid Paralysis)</option><option>Typhoid Fever</option>
+                        <option>SARI / COVID-19</option><option>Neonatal Tetanus</option>
+                        <option>Bloody Diarrhoea</option><option>Any event of public health importance</option>
+                      </select>
+                    </div>
+                    <div class="fg"><label>Date / Time Detected <span class="req">*</span></label><input type="datetime-local" value="2026-05-04T09:30" required></div>
+                    <div class="fg"><label>Exact Location</label><input type="text" placeholder="Street, landmark or GPS"></div>
+                    <div class="fg"><label>Number of People Affected <span class="req">*</span></label><input type="number" min="0" placeholder="0" required></div>
+                    <div class="fg"><label>Number of Deaths (if any)</label><input type="number" min="0" placeholder="0"></div>
+                    <div class="fg"><label>Is Event Ongoing?</label>
+                      <div class="radio-row"><label><input type="radio" name="ongoing" value="yes"> Yes</label><label><input type="radio" name="ongoing" value="no"> No</label><label><input type="radio" name="ongoing" value="unk" checked> Unknown</label></div>
+                    </div>
+                    <div class="fg"><label>Sick / Dead Animals Involved?</label>
+                      <div class="radio-row"><label><input type="radio" name="animals" value="yes"> Yes</label><label><input type="radio" name="animals" value="no" checked> No</label></div>
+                    </div>
+                    <div class="fg fg-full"><label>Action Already Taken</label>
+                      <textarea placeholder="Describe any actions taken (referral, isolation, notification, etc.)"></textarea>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">Save and complete</button>
+                  <button type="button" class="btn btn-secondary" onclick="showToast('Draft saved successfully')">Save draft</button>
+                  <button type="reset" class="btn btn-secondary">Clear</button>
+                </div>
+              </form>
+            </div>
+            <div id="tca-list" class="tab-content">
+              <table class="dtbl">
+                <thead><tr><th>Date</th><th>Reporter</th><th>Disease/Event</th><th>Community</th><th>Cases</th><th>Deaths</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td>2026-05-04</td><td>Aisha Mohammed</td><td>Cholera</td><td>Surulere, Lagos</td><td>12</td><td>1</td><td><span class="badge b-red">Active</span></td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
+                  <tr><td>2026-05-03</td><td>Emeka Obi</td><td>Measles</td><td>Kano Municipal</td><td>8</td><td>0</td><td><span class="badge b-orange">Referred</span></td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
+                  <tr><td>2026-05-03</td><td>Fatima Yusuf</td><td>Mpox</td><td>Eleme, Rivers</td><td>3</td><td>0</td><td><span class="badge b-orange">Referred</span></td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
+                  <tr><td>2026-05-02</td><td>Chukwu Eze</td><td>Lassa Fever</td><td>Benin City, Edo</td><td>2</td><td>1</td><td><span class="badge b-green">Confirmed</span></td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
+                  <tr><td>2026-05-01</td><td>Ibrahim Sani</td><td>Meningitis</td><td>Kaduna North</td><td>5</td><td>0</td><td><span class="badge b-blue">Closed</span></td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <!-- Facility IDSR form -->
+          <div id="form-fi" style="display:none">
+            <div class="form-title">Facility IDSR Case-Based Reporting Form</div>
+            <div class="form-sub">Healthcare provider — facility-level case confirmation and reporting</div>
+            <div class="tab-nav">
+              <button class="tab-btn active" onclick="switchTab(this,'tfi-form')">New Case</button>
+              <button class="tab-btn" onclick="switchTab(this,'tfi-list')">Case Registry</button>
+            </div>
+            <div id="tfi-form" class="tab-content active">
+              <form onsubmit="submitForm(event,'Facility IDSR Case')">
+                <div class="fsection">
+                  <div class="fsec-head">Facility and Diagnosis</div>
+                  <div class="fsec-body">
+                    <div class="fg"><label>Health Facility</label>
+                      <select><option>Lagos University Teaching Hospital</option><option>Aminu Kano Teaching Hospital</option><option>National Hospital Abuja</option><option>UCH Ibadan</option><option>UITH Ilorin</option></select>
+                    </div>
+                    <div class="fg"><label>Date Seen at Facility <span class="req">*</span></label><input type="date" value="2026-05-04" required></div>
+                    <div class="fg fg-full"><label>Disease / Event Diagnosis <span class="req">*</span></label>
+                      <select required>
+                        <option value="">-- Select disease --</option>
+                        <option>AFP</option><option>Anthrax</option><option>Cholera</option><option>Bloody Diarrhoea</option>
+                        <option>Dracunculiasis</option><option>Neonatal Tetanus</option><option>Measles</option>
+                        <option>Dengue</option><option>Chikungunya</option><option>Meningitis</option>
+                        <option>Mpox (Monkeypox)</option><option>Yellow Fever</option><option>SARS/SARI</option>
+                        <option>Maternal Death</option><option>Neonatal Death</option><option>Viral Haemorrhagic Fever</option>
+                        <option>Lassa Fever</option><option>Typhoid Fever</option><option>Rabies (Human)</option>
+                        <option>AEFI</option><option>Any event of public health importance</option>
+                      </select>
+                    </div>
+                    <div class="fg"><label>Date of Onset of Symptoms</label><input type="date"></div>
+                    <div class="fg"><label>Community / Neighbourhood</label><input type="text" placeholder="e.g. Ikeja, Lagos"></div>
+                  </div>
+                </div>
+                <div class="fsection">
+                  <div class="fsec-head">Patient Demographics</div>
+                  <div class="fsec-body">
+                    <div class="fg"><label>Patient Name <span class="req">*</span></label><input type="text" placeholder="Full name" required></div>
+                    <div class="fg"><label>Date of Birth</label><input type="date"></div>
+                    <div class="fg"><label>Age (Years)</label><input type="number" min="0" placeholder="Years"></div>
+                    <div class="fg"><label>Age (Months)</label><input type="number" min="0" max="11" placeholder="Months"></div>
+                    <div class="fg"><label>Sex <span class="req">*</span></label>
+                      <div class="radio-row"><label><input type="radio" name="sex" value="M" required> Male</label><label><input type="radio" name="sex" value="F"> Female</label></div>
+                    </div>
+                    <div class="fg"><label>Urban / Rural</label>
+                      <div class="radio-row"><label><input type="radio" name="ur" value="U"> Urban</label><label><input type="radio" name="ur" value="R" checked> Rural</label></div>
+                    </div>
+                    <div class="fg"><label>Occupation</label><input type="text" placeholder="e.g. Farmer, Trader, Student"></div>
+                    <div class="fg"><label>Phone / Address</label><input type="text" placeholder="Contact number or address"></div>
+                  </div>
+                </div>
+                <div class="fsection">
+                  <div class="fsec-head">Clinical and Lab Details</div>
+                  <div class="fsec-body">
+                    <div class="fg"><label>Travel History</label>
+                      <div class="radio-row"><label><input type="radio" name="travel" value="Y"> Yes</label><label><input type="radio" name="travel" value="N" checked> No</label></div>
+                    </div>
+                    <div class="fg"><label>Travel Destination (if yes)</label><input type="text" placeholder="State / Country"></div>
+                    <div class="fg"><label>Vaccine Doses Received</label><input type="number" min="0" max="9" placeholder="0–9 (9=unknown)"></div>
+                    <div class="fg"><label>Date of Last Vaccination</label><input type="date"></div>
+                    <div class="fg"><label>Date Specimen Collected</label><input type="date"></div>
+                    <div class="fg"><label>Date Specimen Sent to Lab</label><input type="date"></div>
+                    <div class="fg fg-full"><label>Laboratory Results</label>
+                      <select><option>Pending</option><option>Positive</option><option>Negative</option><option>Inconclusive</option><option>Not collected</option></select>
+                    </div>
+                  </div>
+                </div>
+                <div class="fsection">
+                  <div class="fsec-head">Outcome and Classification</div>
+                  <div class="fsec-body">
+                    <div class="fg"><label>Outcome <span class="req">*</span></label>
+                      <select required><option>Alive</option><option>Dead</option><option>Transferred out</option><option>Lost to follow-up</option><option>Unknown</option></select>
+                    </div>
+                    <div class="fg"><label>Final Classification <span class="req">*</span></label>
+                      <select required><option>Suspected</option><option>Confirmed</option><option>Probable</option><option>Compatible</option><option>Discarded</option></select>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">Save and complete</button>
+                  <button type="button" class="btn btn-secondary" onclick="showToast('Case referred to national registry')">Refer to registry</button>
+                  <button type="button" class="btn btn-secondary" onclick="showToast('Draft saved')">Save draft</button>
+                </div>
+              </form>
+            </div>
+            <div id="tfi-list" class="tab-content">
+              <table class="dtbl">
+                <thead><tr><th>Case ID</th><th>Patient</th><th>Age/Sex</th><th>Disease</th><th>Facility</th><th>Date</th><th>Classification</th><th>Outcome</th></tr></thead>
+                <tbody>
+                  <tr><td>NG-2026-0421</td><td>A. Bello</td><td>34M</td><td>Cholera</td><td>LUTH</td><td>2026-05-03</td><td><span class="badge b-red">Confirmed</span></td><td>Alive</td></tr>
+                  <tr><td>NG-2026-0420</td><td>F. Adamu</td><td>8F</td><td>Measles</td><td>Aminu Kano TH</td><td>2026-05-03</td><td><span class="badge b-orange">Probable</span></td><td>Alive</td></tr>
+                  <tr><td>NG-2026-0419</td><td>E. Nwosu</td><td>45M</td><td>Lassa Fever</td><td>UCH Ibadan</td><td>2026-05-02</td><td><span class="badge b-red">Confirmed</span></td><td>Dead</td></tr>
+                  <tr><td>NG-2026-0418</td><td>H. Garba</td><td>22M</td><td>Mpox</td><td>National Hosp. Abuja</td><td>2026-05-02</td><td><span class="badge b-green">Discarded</span></td><td>Alive</td></tr>
+                  <tr><td>NG-2026-0417</td><td>C. Okafor</td><td>6F</td><td>Meningitis</td><td>Kaduna Spec. Hosp.</td><td>2026-05-01</td><td><span class="badge b-red">Confirmed</span></td><td>Alive</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <!-- Weekly Aggregate form -->
+          <div id="form-wa" style="display:none">
+            <div class="form-title">Weekly Aggregate Disease Report</div>
+            <div class="form-sub">District/State weekly summary — IDSR Priority Diseases</div>
+            <div class="period-row">
+              <label>Organisation Unit:</label>
+              <select><option>Lagos State</option><option>Kano State</option><option>Rivers State</option><option>FCT Abuja</option></select>
+              <label>Period:</label>
+              <select><option>Week 18, 2026 (Apr 27 – May 3)</option><option>Week 17, 2026</option></select>
+              <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="showToast('Data loaded for Week 18, Lagos State')">Load Data</button>
+            </div>
+            <table class="de-tbl" style="width:100%;margin-bottom:14px">
+              <thead><tr><th style="text-align:left;width:160px">Disease</th><th>Suspected</th><th>Confirmed</th><th>Deaths</th><th>Referred</th><th>Vaccinated</th></tr></thead>
+              <tbody>
+                <tr><td>Cholera</td><td><input value="47"></td><td><input value="12"></td><td><input value="2"></td><td><input value="35"></td><td><input value="0"></td></tr>
+                <tr><td>Measles</td><td><input value="23"></td><td><input value="8"></td><td><input value="0"></td><td><input value="15"></td><td><input value="22"></td></tr>
+                <tr><td>Meningitis</td><td><input value="9"></td><td><input value="3"></td><td><input value="1"></td><td><input value="6"></td><td><input value="0"></td></tr>
+                <tr><td>Lassa Fever</td><td><input value="5"></td><td><input value="2"></td><td><input value="1"></td><td><input value="3"></td><td><input value="0"></td></tr>
+                <tr><td>Mpox</td><td><input value="11"></td><td><input value="4"></td><td><input value="0"></td><td><input value="7"></td><td><input value="0"></td></tr>
+                <tr><td>Yellow Fever</td><td><input value="3"></td><td><input value="1"></td><td><input value="0"></td><td><input value="2"></td><td><input value="1"></td></tr>
+                <tr><td>Typhoid Fever</td><td><input value="31"></td><td><input value="14"></td><td><input value="0"></td><td><input value="17"></td><td><input value="0"></td></tr>
+                <tr><td>AFP</td><td><input value="2"></td><td><input value="0"></td><td><input value="0"></td><td><input value="2"></td><td><input value="0"></td></tr>
+                <tr><td>Bloody Diarrhoea</td><td><input value="18"></td><td><input value="6"></td><td><input value="0"></td><td><input value="12"></td><td><input value="0"></td></tr>
+                <tr><td>Neonatal Tetanus</td><td><input value="1"></td><td><input value="1"></td><td><input value="1"></td><td><input value="0"></td><td><input value="0"></td></tr>
+              </tbody>
+            </table>
+            <div class="form-actions">
+              <button class="btn btn-primary" onclick="showToast('Weekly data saved and submitted')">Save and complete</button>
+              <button class="btn btn-secondary" onclick="showToast('Draft saved')">Save draft</button>
+              <button class="btn btn-secondary" onclick="showToast('Validation passed — no errors found')">Validate</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA ENTRY PAGE -->
+  <div id="page-data-entry" class="page">
+    <div class="page-header"><h1>Data Entry</h1></div>
+    <div class="page-content">
+      <div class="de-layout">
+        <div class="de-side">
+          <h3>Data Sets</h3>
+          <div class="de-item active" onclick="selDE(this)">IDSR Weekly Report</div>
+          <div class="de-item" onclick="selDE(this)">Community Case Report</div>
+          <div class="de-item" onclick="selDE(this)">Facility Monthly Summary</div>
+          <div class="de-item" onclick="selDE(this)">Vaccination Coverage</div>
+          <div class="de-item" onclick="selDE(this)">Outbreak Line List</div>
+        </div>
+        <div class="de-main">
+          <div class="period-row">
+            <label>Org Unit:</label>
+            <select><option>Lagos State</option><option>Kano State</option><option>FCT Abuja</option></select>
+            <label>Period:</label>
+            <select><option>Week 18 (Apr 27–May 3, 2026)</option><option>Week 17</option></select>
+            <button class="btn btn-primary btn-sm" onclick="showToast('Data loaded successfully')">Open</button>
+          </div>
+          <table class="de-tbl">
+            <thead>
+              <tr><th rowspan="2" style="text-align:left;vertical-align:middle">Disease</th><th colspan="3">Suspected</th><th colspan="3">Confirmed</th><th colspan="2">Deaths</th></tr>
+              <tr><th>&lt;5 yrs</th><th>5–14</th><th>15+</th><th>&lt;5 yrs</th><th>5–14</th><th>15+</th><th>M</th><th>F</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Cholera</td><td><input value="18"></td><td><input value="12"></td><td><input value="17"></td><td><input value="4"></td><td><input value="3"></td><td><input value="5"></td><td><input value="1"></td><td><input value="1"></td></tr>
+              <tr><td>Measles</td><td><input value="14"></td><td><input value="6"></td><td><input value="3"></td><td><input value="5"></td><td><input value="2"></td><td><input value="1"></td><td><input value="0"></td><td><input value="0"></td></tr>
+              <tr><td>Meningitis</td><td><input value="3"></td><td><input value="4"></td><td><input value="2"></td><td><input value="1"></td><td><input value="1"></td><td><input value="1"></td><td><input value="1"></td><td><input value="0"></td></tr>
+              <tr><td>Lassa Fever</td><td><input value="0"></td><td><input value="1"></td><td><input value="4"></td><td><input value="0"></td><td><input value="1"></td><td><input value="1"></td><td><input value="1"></td><td><input value="0"></td></tr>
+              <tr><td>Typhoid Fever</td><td><input value="8"></td><td><input value="11"></td><td><input value="12"></td><td><input value="3"></td><td><input value="5"></td><td><input value="6"></td><td><input value="0"></td><td><input value="0"></td></tr>
+            </tbody>
+          </table>
+          <div class="form-actions" style="margin-top:14px">
+            <button class="btn btn-primary" onclick="showToast('Data saved and submitted')">Save</button>
+            <button class="btn btn-secondary" onclick="showToast('Validation passed — no errors')">Validate</button>
+            <button class="btn btn-secondary" onclick="showToast('Exported as CSV')">Export CSV</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAPS PAGE -->
+  <div id="page-maps" class="page">
+    <div class="page-header"><h1>Maps</h1></div>
+    <div class="page-content" style="padding:0">
+      <div class="maps-bar">
+        <button class="active" onclick="mlClick(this)">Thematic Layer</button>
+        <button onclick="mlClick(this)">Facility Layer</button>
+        <button onclick="mlClick(this)">Heatmap</button>
+        <select onchange="showToast('Map updated')"><option>Confirmed Cases</option><option>Suspected Cases</option><option>Deaths</option><option>CFR</option></select>
+        <select onchange="showToast('Disease filter applied')"><option>All Diseases</option><option>Cholera</option><option>Measles</option><option>Lassa Fever</option><option>Mpox</option></select>
+        <select onchange="showToast('Period updated')"><option>Week 18, 2026</option><option>April 2026</option><option>Q1 2026</option></select>
+        <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="showToast('Map downloaded as PNG')">Download</button>
+      </div>
+      <div style="background:#dce8f0;min-height:calc(100vh - 185px);display:flex;align-items:center;justify-content:center;font-size:13px;color:#555">
+        <div style="text-align:center">
+          <div style="font-size:15px;font-weight:600;margin-bottom:8px;color:#1565c0">Nigeria Disease Burden Map — W18, 2026</div>
+          <div>Interactive map loaded — use toolbar above to switch layers, diseases, and periods</div>
+          <div style="margin-top:12px;font-size:12px;color:#888">Showing confirmed cases choropleth | Click states for drill-down</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS PAGE -->
+  <div id="page-analytics" class="page">
+    <div class="page-header"><h1>Analytics</h1></div>
+    <div class="page-content">
+      <div class="chart-row-2">
+        <div class="chart-card">
+          <h3>Monthly Case Trend — 2026</h3>
+          <div class="chart-sub">All diseases — Suspected vs Confirmed</div>
+          <canvas id="monthlyChart2" height="140"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Epidemic Curve — Cholera Outbreak, Lagos State</h3>
+          <div class="chart-sub">Daily new suspected cases — last 30 days</div>
+          <canvas id="epicurveChart" height="140"></canvas>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-bottom:14px">
+        <h3>Top Diseases — Pivot Table (Confirmed cases by State, W18)</h3>
+        <div class="chart-sub">Select state/disease to drill down</div>
+        <table class="dtbl">
+          <thead><tr><th>Disease</th><th>Lagos</th><th>Kano</th><th>Oyo</th><th>FCT</th><th>Rivers</th><th>Kaduna</th><th>Total</th></tr></thead>
+          <tbody>
+            <tr><td>Cholera</td><td>28</td><td>18</td><td>12</td><td>9</td><td>8</td><td>6</td><td>81</td></tr>
+            <tr><td>Typhoid</td><td>21</td><td>15</td><td>10</td><td>8</td><td>7</td><td>5</td><td>66</td></tr>
+            <tr><td>Measles</td><td>14</td><td>19</td><td>8</td><td>5</td><td>6</td><td>9</td><td>61</td></tr>
+            <tr><td>Mpox</td><td>9</td><td>6</td><td>5</td><td>4</td><td>7</td><td>3</td><td>34</td></tr>
+            <tr><td>Lassa Fever</td><td>3</td><td>2</td><td>2</td><td>1</td><td>2</td><td>0</td><td>10</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW EVENT MODAL -->
+  <div class="modal-bg" id="new-evt-modal">
+    <div class="modal-box">
+      <div class="modal-head"><h3>Register New Event</h3><button class="modal-close" onclick="document.getElementById('new-evt-modal').classList.remove('open')">x</button></div>
+      <div class="modal-body">
+        <div class="fg" style="margin-bottom:12px"><label>Program</label>
+          <select style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px"><option>Community Alert</option><option>Facility IDSR Case</option></select>
+        </div>
+        <div class="fg" style="margin-bottom:12px"><label>Organisation Unit</label>
+          <select style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px"><option>Lagos State</option><option>Kano State</option><option>Rivers State</option><option>FCT Abuja</option></select>
+        </div>
+        <div class="fg"><label>Event Date</label>
+          <input type="date" value="2026-05-04" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px">
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="document.getElementById('new-evt-modal').classList.remove('open')">Cancel</button>
+        <button class="btn btn-primary" onclick="document.getElementById('new-evt-modal').classList.remove('open');showToast('New event created — form ready for data entry')">Create Event</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+<script>
+// ======= NAVIGATION =======
+function doLogin(){
+  const u=document.getElementById('lu').value,p=document.getElementById('lp').value;
+  if(!u||!p){showToast('Please enter username and password','error');return;}
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  showApp('dashboard');
+  setTimeout(()=>showToast('Welcome back, Minister Okonkwo — Nigeria IDSR System','success'),400);
+}
+
+function showApp(name){
+  document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active');p.style.display='none'});
+  const pg=document.getElementById('page-'+name);
+  if(pg){pg.classList.add('active');pg.style.display='flex';}
+  const labels={'dashboard':'Dashboard','capture':'Capture','data-entry':'Data Entry','maps':'Maps','analytics':'Analytics'};
+  document.getElementById('breadcrumb').textContent=labels[name]||name;
+  if(name==='dashboard') initDashCharts();
+  if(name==='analytics') initAnalyticsCharts();
+}
+
+// ======= APPS OVERLAY =======
+function toggleApps(){document.getElementById('apps-overlay').classList.toggle('open');}
+function closeApps(){document.getElementById('apps-overlay').classList.remove('open');}
+document.addEventListener('click',e=>{
+  const o=document.getElementById('apps-overlay');
+  if(o&&!o.contains(e.target)&&!e.target.closest('#apps-btn'))o.classList.remove('open');
+});
+
+// ======= CAPTURE =======
+function selectProg(el,id){
+  document.querySelectorAll('.prog-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('#cap-main > div').forEach(d=>d.style.display='none');
+  document.getElementById('form-'+id).style.display='block';
+}
+function switchTab(btn,tid){
+  const nav=btn.parentElement;
+  nav.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const cont=btn.closest('[id^="form-"]');
+  if(cont) cont.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  const t=document.getElementById(tid);
+  if(t) t.classList.add('active');
+}
+function submitForm(e,name){
+  e.preventDefault();
+  const ids={'Community Alert':'NG-CA-2026-'+String(Math.floor(1000+Math.random()*9000)),'Facility IDSR Case':'NG-'+new Date().getFullYear()+'-0422'};
+  showToast((name==='Community Alert'?'Alert submitted. ID: ':'Case saved. ID: ')+(ids[name]||'OK'),'success');
+  e.target.reset();
+}
+function selDE(el){
+  document.querySelectorAll('.de-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  showToast('Dataset "'+el.textContent.trim()+'" selected');
+}
+function mlClick(btn){
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  showToast('Layer "'+btn.textContent.trim()+'" activated');
+}
+
+// ======= MAP TOOLTIP =======
+document.querySelectorAll('.ng-state').forEach(el=>{
+  el.addEventListener('mouseenter',function(ev){
+    const s=this.getAttribute('data-s'),c=this.getAttribute('data-c');
+    const svg=this.closest('svg');
+    const bb=this.getBoundingClientRect(),sb=svg.getBoundingClientRect();
+    const cx=bb.left-sb.left+(bb.width/2),cy=bb.top-sb.top;
+    const vw=parseFloat(svg.getAttribute('viewBox').split(' ')[2]),vh=parseFloat(svg.getAttribute('viewBox').split(' ')[3]);
+    const scaleX=vw/sb.width,scaleY=vh/sb.height;
+    const tx=Math.min(cx*scaleX,vw-160),ty=Math.max(cy*scaleY-60,5);
+    const bg=svg.querySelector('[id$="-bg"], #tt-bg, #map2-bg');
+    const ts=svg.querySelector('[id$="-state"], #tt-state, #map2-state');
+    const tc=svg.querySelector('[id$="-cases"], #tt-cases, #map2-cases');
+    if(bg){bg.setAttribute('x',tx);bg.setAttribute('y',ty);bg.setAttribute('opacity','0.92');}
+    if(ts){ts.setAttribute('x',tx+8);ts.setAttribute('y',ty+18);ts.setAttribute('opacity','1');ts.textContent=s;}
+    if(tc){tc.setAttribute('x',tx+8);tc.setAttribute('y',ty+36);tc.setAttribute('opacity','1');tc.textContent=c+' confirmed cases — click for detail';}
+  });
+  el.addEventListener('mouseleave',function(){
+    const svg=this.closest('svg');
+    ['#tt-bg','#tt-state','#tt-cases','#map2-bg','#map2-state','#map2-cases'].forEach(sel=>{
+      const el=svg.querySelector(sel);
+      if(el) el.setAttribute('opacity','0');
+    });
+  });
+  el.addEventListener('click',function(){
+    showToast(this.getAttribute('data-s')+': '+this.getAttribute('data-c')+' confirmed cases — drill-down in Analytics app');
+  });
+});
+
+// ======= TOAST =======
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show'+(type?' '+type:'');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3400);
+}
+
+// ======= STATE TABLE DATA =======
+const stateData=[
+  {state:'Lagos',zone:'SW',diseases:[
+    {name:'Cholera',sus:198,conf:112,deaths:4,alert:'outbreak',lbl:'Outbreak'},
+    {name:'Typhoid Fever',sus:62,conf:28,deaths:0,alert:'orange',lbl:'Alert'},
+    {name:'Mpox',sus:21,conf:9,deaths:0,alert:'orange',lbl:'Watch'}
+  ]},
+  {state:'Kano',zone:'NW',diseases:[
+    {name:'Measles',sus:89,conf:44,deaths:2,alert:'outbreak',lbl:'Outbreak'},
+    {name:'Cholera',sus:54,conf:18,deaths:1,alert:'orange',lbl:'Alert'},
+    {name:'Meningitis',sus:28,conf:12,deaths:1,alert:'orange',lbl:'Alert'}
+  ]},
+  {state:'Oyo',zone:'SW',diseases:[
+    {name:'Typhoid Fever',sus:74,conf:34,deaths:0,alert:'orange',lbl:'Alert'},
+    {name:'Cholera',sus:42,conf:18,deaths:1,alert:'orange',lbl:'Alert'},
+    {name:'Measles',sus:19,conf:8,deaths:0,alert:'blue',lbl:'Normal'}
+  ]},
+  {state:'Kaduna',zone:'NW',diseases:[
+    {name:'Meningitis',sus:48,conf:24,deaths:2,alert:'outbreak',lbl:'Outbreak'},
+    {name:'Measles',sus:35,conf:18,deaths:0,alert:'orange',lbl:'Alert'},
+    {name:'Cholera',sus:22,conf:11,deaths:0,alert:'orange',lbl:'Watch'}
+  ]},
+  {state:'Rivers',zone:'SS',diseases:[
+    {name:'Mpox',sus:28,conf:14,deaths:0,alert:'orange',lbl:'Alert'},
+    {name:'Cholera',sus:24,conf:10,deaths:0,alert:'orange',lbl:'Watch'},
+    {name:'Lassa Fever',sus:8,conf:3,deaths:0,alert:'orange',lbl:'Watch'}
+  ]},
+  {state:'FCT Abuja',zone:'NC',diseases:[
+    {name:'Cholera',sus:31,conf:14,deaths:1,alert:'orange',lbl:'Alert'},
+    {name:'Typhoid Fever',sus:29,conf:13,deaths:0,alert:'blue',lbl:'Normal'},
+    {name:'Mpox',sus:12,conf:5,deaths:0,alert:'blue',lbl:'Normal'}
+  ]},
+  {state:'Plateau',zone:'NC',diseases:[
+    {name:'Meningitis',sus:34,conf:16,deaths:2,alert:'outbreak',lbl:'Outbreak'},
+    {name:'Typhoid Fever',sus:22,conf:10,deaths:0,alert:'orange',lbl:'Watch'},
+    {name:'Measles',sus:14,conf:7,deaths:0,alert:'blue',lbl:'Normal'}
+  ]},
+  {state:'Borno',zone:'NE',diseases:[
+    {name:'Cholera',sus:28,conf:10,deaths:1,alert:'orange',lbl:'Alert'},
+    {name:'Measles',sus:18,conf:7,deaths:0,alert:'orange',lbl:'Watch'},
+    {name:'Meningitis',sus:12,conf:5,deaths:0,alert:'blue',lbl:'Normal'}
+  ]},
+];
+
+function buildStateTable(){
+  const tb=document.getElementById('state-tbody');
+  if(!tb) return;
+  const lvMap={red:'alv-alert',orange:'alv-watch',blue:'alv-normal',green:'alv-normal',outbreak:'alv-outbreak'};
+  let rows='';
+  stateData.forEach((row)=>{
+    rows+=`<tr class="sep-row"><td colspan="7"><strong>${row.state}</strong> &mdash; <span style="font-weight:400">${row.zone} Zone</span></td></tr>`;
+    row.diseases.forEach((d,di)=>{
+      const lvClass=lvMap[d.alert]||'alv-normal';
+      rows+=`<tr>
+        <td class="td-state"></td>
+        <td style="text-align:center;color:#aaa;font-size:11px;padding:8px 4px">${di+1}</td>
+        <td class="td-disease">${d.name}</td>
+        <td class="td-sus">${d.sus.toLocaleString()}</td>
+        <td class="td-conf">${d.conf.toLocaleString()}</td>
+        <td class="td-deaths">${d.deaths}</td>
+        <td class="td-alert"><span class="alv ${lvClass}">${d.lbl}</span></td>
+      </tr>`;
+    });
+  });
+  tb.innerHTML=rows;
+}
+
+// ======= CHARTS =======
+let dashInited=false;
+function initDashCharts(){
+  if(dashInited) return;
+  dashInited=true;
+  buildStateTable();
+
+  // Trends
+  const weeks=['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12','W13','W14','W15','W16','W17','W18'];
+  new Chart(document.getElementById('trendsChart'),{
+    type:'line',
+    data:{labels:weeks,datasets:[
+      {label:'Suspected',data:[820,890,950,780,810,760,840,900,870,820,780,810,950,1020,1100,1180,1145,1284],borderColor:'#1565c0',backgroundColor:'rgba(21,101,192,.10)',fill:true,tension:.35,pointRadius:2,pointHoverRadius:5,borderWidth:2},
+      {label:'Confirmed',data:[210,230,260,200,220,195,225,248,237,210,200,215,268,290,312,330,317,342],borderColor:'#e53935',backgroundColor:'rgba(229,57,53,.10)',fill:true,tension:.35,pointRadius:2,pointHoverRadius:5,borderWidth:2}
+    ]},
+    options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}}},scales:{y:{beginAtZero:true,grid:{color:'#f0f0f0'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+  });
+
+  // Top diseases bar
+  new Chart(document.getElementById('diseaseBar'),{
+    type:'bar',
+    data:{
+      labels:['Cholera','Typhoid','Measles','Mpox','Meningitis','Lassa Fever','Yellow Fever','Dengue'],
+      datasets:[{label:'Confirmed cases',data:[81,66,61,34,18,8,5,4],backgroundColor:['#c62828','#e53935','#ef5350','#fb8c00','#ffa726','#1565c0','#0288d1','#26c6da'],borderRadius:3}]
+    },
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#f0f0f0'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}
+  });
+
+  // CFR
+  new Chart(document.getElementById('cfrChart'),{
+    type:'bar',
+    data:{
+      labels:['Lassa Fever','Meningitis','Cholera','Mpox','Measles','Yellow Fever','Typhoid','Dengue'],
+      datasets:[
+        {label:'CFR % (Current)',data:[18.2,8.4,5.3,3.1,2.1,1.8,0.9,0.5],backgroundColor:'#e53935',borderRadius:3},
+        {label:'Target (%)',data:[20,10,5,5,3,2,2,1],backgroundColor:'rgba(0,0,0,.1)',borderRadius:3}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{beginAtZero:true,grid:{color:'#f0f0f0'},ticks:{font:{size:10}},title:{display:true,text:'CFR (%)',font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:9}}}}}
+  });
+
+  // Age doughnut
+  new Chart(document.getElementById('ageChart'),{
+    type:'doughnut',
+    data:{
+      labels:['<1 yr','1–4 yrs','5–14 yrs','15–24 yrs','25–44 yrs','45–64 yrs','65+ yrs'],
+      datasets:[{data:[28,62,84,54,72,31,11],backgroundColor:['#e53935','#fb8c00','#ffb300','#43a047','#1e88e5','#8e24aa','#6d4c41'],borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{responsive:true,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12}}}}
+  });
+
+  // Gender + urban/rural grouped bar
+  new Chart(document.getElementById('genderChart'),{
+    type:'bar',
+    data:{
+      labels:['Male','Female'],
+      datasets:[
+        {label:'Urban',data:[98,87],backgroundColor:'#1565c0',borderRadius:3},
+        {label:'Rural',data:[74,83],backgroundColor:'#43a047',borderRadius:3}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{beginAtZero:true,grid:{color:'#f0f0f0'},ticks:{font:{size:10}}}}}
+  });
+
+  // Monthly bar (dashboard)
+  new Chart(document.getElementById('monthlyChart'),{
+    type:'bar',
+    data:{
+      labels:['Jan','Feb','Mar','Apr','May (partial)'],
+      datasets:[
+        {label:'Suspected',data:[3420,3810,4120,4380,1284],backgroundColor:'rgba(251,140,0,.75)',borderRadius:3},
+        {label:'Confirmed',data:[890,1020,1140,1180,342],backgroundColor:'rgba(229,57,53,.75)',borderRadius:3}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:10}}}},scales:{y:{beginAtZero:true,grid:{color:'#f0f0f0'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+  });
+}
+
+let analyticsInited=false;
+function initAnalyticsCharts(){
+  if(analyticsInited) return;
+  analyticsInited=true;
+  new Chart(document.getElementById('monthlyChart2'),{
+    type:'bar',
+    data:{
+      labels:['Jan','Feb','Mar','Apr','May (partial)'],
+      datasets:[
+        {label:'Suspected',data:[3420,3810,4120,4380,1284],backgroundColor:'rgba(251,140,0,.75)',borderRadius:3},
+        {label:'Confirmed',data:[890,1020,1140,1180,342],backgroundColor:'rgba(229,57,53,.75)',borderRadius:3}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true},x:{grid:{display:false}}}}
+  });
+  const days=Array.from({length:30},(_,i)=>{const d=new Date('2026-04-05');d.setDate(d.getDate()+i);return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});});
+  const epi=[2,3,2,4,5,3,6,8,7,9,11,10,14,12,16,18,20,22,19,24,27,25,30,33,31,38,42,45,43,47];
+  new Chart(document.getElementById('epicurveChart'),{
+    type:'bar',
+    data:{labels:days,datasets:[{label:'New Suspected Cases (Cholera, Lagos)',data:epi,backgroundColor:'rgba(229,57,53,.7)',borderRadius:2}]},
+    options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true},x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}}}}
+  });
+}
+
+// Enter to login
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
+</script>
+</body>
+</html>
